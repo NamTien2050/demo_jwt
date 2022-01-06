@@ -15,6 +15,6 @@ public class Account {
     private String username;
     private String password;
     private String fullName;
-    @ManyToMany
-    private List<Role> role;
+//    @ManyToMany
+//    private List<Role> role;
 }
