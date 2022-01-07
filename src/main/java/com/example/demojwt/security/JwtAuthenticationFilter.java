@@ -1,10 +1,12 @@
 package com.example.demojwt.security;
 
 import com.example.demojwt.service.AccountService;
+import io.jsonwebtoken.ExpiredJwtException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -31,10 +33,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String jwt = getJwtFromRequest(request);
             if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
                 // Lấy id user từ chuỗi jwt
-                Long AccountId = tokenProvider.getUserIdFromJWT(jwt);
+                String userName = tokenProvider.getUserNameFromJWT(jwt);
                 // Lấy thông tin người dùng từ id
-                UserDetails userDetails = accountService.loadUserByUsername();
-                if(accountDetails != null) {
+//                UserDetails userDetails = accountService.loadUserByUsername(userName);
+                UserDetails userDetails = new User(userName,"",tokenProvider.getRoleFromJWT(jwt));
+                if(userDetails != null) {
                     // Nếu người dùng hợp lệ, set thông tin cho Seturity Context
                     UsernamePasswordAuthenticationToken
                             authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
@@ -43,11 +46,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             }
-        } catch (Exception e) {
+        } catch (ExpiredJwtException e) {
             e.printStackTrace();
-        } catch (IdNotFoundException e) {
+        } catch (Exception e) {
+            System.out.println(e);
             e.printStackTrace();
         }
+        filterChain.doFilter(request,response);
     }
     private String getJwtFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
